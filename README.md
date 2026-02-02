@@ -321,6 +321,108 @@ Grover.configure do |config|
 end
 ```
 
+## Batch Processing
+
+For scenarios where you need to generate multiple PDFs efficiently, Grover provides a batch processing API.
+This keeps the Node.js process and browser connection alive across multiple PDF generations, significantly
+improving performance compared to creating a new `Grover` instance for each document.
+
+### Basic Batch Usage
+
+```ruby
+Grover.batch do |processor|
+  # Generate multiple PDFs with a persistent browser connection
+  pdf1 = processor.convert(:pdf, '<html><body>Document 1</body></html>', format: 'A4')
+  pdf2 = processor.convert(:pdf, '<html><body>Document 2</body></html>', format: 'A4')
+  pdf3 = processor.convert(:pdf, 'https://example.com', format: 'Letter')
+
+  # Save or process the PDFs...
+  File.binwrite('doc1.pdf', pdf1)
+  File.binwrite('doc2.pdf', pdf2)
+  File.binwrite('doc3.pdf', pdf3)
+end
+# Browser and Node.js process are automatically cleaned up after the block
+```
+
+### Incremental HTML Building API
+
+For generating PDFs from large amounts of data without loading the entire HTML string into memory at once,
+you can incrementally append HTML chunks. The chunks are buffered and the complete PDF is generated when you
+call `stream_finish`:
+
+```ruby
+Grover.batch do |processor|
+  # Start building HTML with PDF options
+  processor.stream_start(format: 'A4', margin: { top: '1cm', bottom: '1cm' })
+
+  # Append the HTML opening
+  processor.stream_append('<html><head><title>Large Report</title></head><body>')
+
+  # Incrementally append content from a database or file
+  # This avoids holding the entire HTML string in Ruby memory
+  large_data.each_slice(1000) do |batch|
+    html_chunk = render_table_rows(batch)
+    processor.stream_append(html_chunk)
+  end
+
+  processor.stream_append('</body></html>')
+
+  # Generate the complete PDF from all appended chunks
+  pdf = processor.stream_finish
+
+  File.binwrite('large_report.pdf', pdf)
+end
+```
+
+### Direct BatchProcessor Usage
+
+For more control, you can use the `BatchProcessor` class directly:
+
+```ruby
+processor = Grover::BatchProcessor.new(Dir.pwd)
+
+begin
+  # Generate PDFs
+  pdf1 = processor.convert(:pdf, html1, {})
+  pdf2 = processor.convert(:pdf, html2, {})
+
+  # Check if processor is still alive
+  puts "Processor alive: #{processor.alive?}"
+ensure
+  # Always shut down when done
+  processor.shutdown
+end
+```
+
+### Batch Configuration Options
+
+You can configure retry behavior for batch processing:
+
+```ruby
+# config/initializers/grover.rb
+Grover.configure do |config|
+  # Number of retry attempts for transient connection errors (default: 2)
+  config.batch_retry_count = 3
+
+  # Initial delay in milliseconds between retries, with exponential backoff (default: 100)
+  config.batch_retry_delay = 200
+end
+```
+
+### When to Use Batch Processing
+
+Use batch processing when:
+- Generating multiple PDFs in a single request or background job
+- Processing a queue of documents
+- Performance is critical and browser startup time is a bottleneck
+
+Use the incremental HTML building API (`stream_start`/`stream_append`/`stream_finish`) when:
+- Generating PDFs from large datasets that would create very large HTML strings
+- Building HTML content incrementally from database queries or external sources
+- You want to avoid holding the entire HTML document in Ruby memory at once
+
+For single PDF generation or middleware usage, the standard `Grover` class remains the recommended approach.
+
 ## Middleware
 Grover comes with a middleware that allows users to get a PDF, PNG or JPEG view of
 any page on your site by appending .pdf, .png or .jpeg/.jpg to the URL.

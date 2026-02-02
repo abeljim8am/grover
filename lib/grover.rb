@@ -11,7 +11,9 @@ require 'grover/middleware'
 require 'grover/configuration'
 require 'grover/options_builder'
 require 'grover/dev_tools_parser'
+require 'grover/processor_base'
 require 'grover/processor'
+require 'grover/batch_processor'
 
 require 'nokogiri'
 require 'yaml'
@@ -145,6 +147,10 @@ class Grover
 
   def self.configure
     yield(configuration)
+  end
+
+  def self.batch(app_root = Dir.pwd, &block)
+    BatchProcessor.batch(app_root, &block)
   end
 
   private

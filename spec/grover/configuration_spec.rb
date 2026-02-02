@@ -121,4 +121,28 @@ describe Grover::Configuration do
       it { is_expected.to be true }
     end
   end
+
+  describe '#batch_retry_count' do
+    subject(:batch_retry_count) { configuration.batch_retry_count }
+
+    it { is_expected.to eq 2 }
+
+    context 'when configured differently' do
+      before { configuration.batch_retry_count = 5 }
+
+      it { is_expected.to eq 5 }
+    end
+  end
+
+  describe '#batch_retry_delay' do
+    subject(:batch_retry_delay) { configuration.batch_retry_delay }
+
+    it { is_expected.to eq 100 }
+
+    context 'when configured differently' do
+      before { configuration.batch_retry_delay = 200 }
+
+      it { is_expected.to eq 200 }
+    end
+  end
 end

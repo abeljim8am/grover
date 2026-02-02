@@ -8,7 +8,8 @@ class Grover
     attr_accessor :options, :meta_tag_prefix, :ignore_path, :ignore_request,
                   :root_url, :use_pdf_middleware, :use_png_middleware,
                   :use_jpeg_middleware, :js_runtime_bin,
-                  :node_env_vars, :allow_file_uris, :allow_local_network_access
+                  :node_env_vars, :allow_file_uris, :allow_local_network_access,
+                  :batch_retry_count, :batch_retry_delay
 
     def initialize # rubocop:disable Metrics/MethodLength
       @options = {}
@@ -23,6 +24,8 @@ class Grover
       @node_env_vars = {}
       @allow_file_uris = false
       @allow_local_network_access = false
+      @batch_retry_count = 2
+      @batch_retry_delay = 100
     end
   end
 end
